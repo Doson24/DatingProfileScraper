@@ -6,18 +6,74 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.webdriver import WebDriver
 from selenium.webdriver.remote.webelement import WebElement
 import requests
-
-
+from dataclasses import dataclass, asdict
+import json
 # получение url изображения с сайта
-def get_image_url(driver: WebDriver):
-    # images = browser.find_elements(By.XPATH, '//span/div[@role="img"]')
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from dataclasses import dataclass
+import os
 
-    # images = browser.find_elements(By.XPATH, '//span[contains(@class, "keen")]')
-    images = driver.find_elements(By.XPATH, '//*[@role="img" and contains(@class, "profileCard")]')
-    for image in images:
-        if image.get_attribute('style') != '':
-            yield image.get_attribute('style').split('url("')[1].split('")')[0]
 
+# dataclass для анкеты
+@dataclass
+class Profile:
+    name: str
+    age: str
+    sex: str
+    info: str
+    media: list
+
+    def to_dict(self):
+        return asdict(self)
+
+
+# Функция добавления записи в json файл Profile
+def add_to_json(profile: Profile):
+    data = []
+    if not os.path.isfile('profiles.json'):
+        with open('profiles.json', 'w') as file:
+            json.dump(data, file)
+    with open('profiles.json', 'r', encoding='utf-8', errors='ignore') as file:
+        data = json.load(file)
+    data.append(profile.to_dict())
+    with open('profiles.json', 'w', encoding='utf-8', errors='ignore') as file:
+        json.dump(data, file, indent=2)
+
+
+# def save_to_json(profiles: list[Profile]):
+#     with open('profiles.json', 'w') as file:
+#         json.dump([profile.to_dict() for profile in profiles], file, indent=2)
+
+
+# Функция проверки на наличие папки с именем name, если нет, то создает ее
+def check_folder(name: str, path: str = 'photos'):
+    path = f'{path}/{name}'
+    if not os.path.exists(path):
+        os.makedirs(path)
+
+
+# Функция проверяет все имена папок на наличие в имени части name
+def check_folder_name(name: str, path: str) -> list[str]:
+    return [folder for folder in os.listdir(f'{path}/') if name in folder]
+
+
+def get_info_profile(driver: WebDriver) -> list:
+    """Get the name of the person whose profile is open."""
+    try:
+        block_info = driver.find_elements(By.XPATH, '//div[contains(@class,"profileCard")]/div[2]/div')
+        return [_.text for _ in block_info[:-2]]
+    except Exception as ex:
+        logger.error(f'Profile info not found: {ex}')
+
+
+def get_image_url(driver: WebDriver) -> list:
+    wait = WebDriverWait(driver, 30)  # wait for up to 10 seconds
+    images = wait.until(
+        EC.presence_of_all_elements_located(
+            (By.XPATH, '//*[@role="img" and contains(@class, "profileCard")]')))
+    return [image.get_attribute('style').split('url("')[1].split('")')[0]
+            for image in images]
 
 
 def download_image(url, filename):
@@ -28,6 +84,7 @@ def download_image(url, filename):
                 file.write(chunk)
     else:
         logger.error(f'Image not found: {url}')
+
 
 def get_name(browser: WebDriver) -> str:
     """Get the name of the person whose profile is open."""
