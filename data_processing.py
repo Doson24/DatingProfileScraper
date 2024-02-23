@@ -102,5 +102,46 @@ def get_age(browser: WebDriver) -> str:
         logger.error(f'Age not found: {ex}')
 
 
+def delete_duplicates(filename):
+    """
+    Функция для удаления дубликатов из файла 'profiles.json'.
+    Если в файле 'profiles.json' есть профили с одинаковыми именами, функция удаляет все дубликаты, оставляя только один профиль.
+    После удаления профиля, функция также удаляет все связанные с ним файлы изображений.
+    """
+    # Открываем файл 'profiles.json' для чтения
+    with open(filename, 'r', encoding='utf-8', errors='ignore') as file:
+        # Загружаем данные из файла
+        data = json.load(file)
+    # Создаем список имен всех профилей
+    info = [profile['info'] for profile in data]
+    # Проходим по всем уникальным именам
+    for name in set(info):
+        # Если имя встречается более одного раза
+        if info.count(name) > 1:
+            # Проходим по всем профилям
+            for profile in data:
+                info = [profile['info'] for profile in data]
+                if info.count(name) == 1:
+                    break
+                # Если имя профиля совпадает с текущим именем
+                if profile['info'] == name:
+                    # Удаляем профиль из списка
+                    data.remove(profile)
+                    # Удаляем все файлы изображений, связанные с профилем
+                    for file in profile['media']:
+                        try:
+                            os.remove(file)
+                        except:
+                            print('Нет файла:', file)
+                    try:
+                        os.removedirs(file.split('/')[0] + '/' + file.split('/')[1])
+                    except:
+                        print('Отсутствует папка:', file.split('/')[0] + '/' + file.split('/')[1])
+    # Открываем файл 'profiles.json' для записи
+    with open('no_duplicates_profiles.json', 'w', encoding='utf-8', errors='ignore') as file:
+        # Записываем обновленные данные в файл
+        json.dump(data, file, indent=2)
+
+
 if __name__ == '__main__':
-    get_image_url()
+    delete_duplicates('profiles.json')
