@@ -26,6 +26,14 @@ def click_open_profile(driver: WebDriver):
         logger.info('Кнопка "Открыть профиль" нажата')
     except Exception as ex:
         logger.error(f'Open profile button not found: {ex}')
+        time.sleep(5)
+        try:
+            wait = WebDriverWait(driver, 10)  # wait for up to 10 seconds
+            buttons = wait.until(EC.presence_of_all_elements_located((By.XPATH, '//div/div[@role="button"]')))
+            buttons[1].send_keys(Keys.ENTER)
+            logger.info('Кнопка "Открыть профиль" нажата')
+        except Exception as ex:
+            logger.error('Open profile button not found {ex}')
 
 
 def get_sliders(driver: WebDriver, name):
